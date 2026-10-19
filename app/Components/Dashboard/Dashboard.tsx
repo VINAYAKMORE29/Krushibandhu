@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
+import {soilData} from "../../soil/soilData";
 
 import {
     Droplets,
@@ -20,362 +21,13 @@ import {
     Waves,
 } from "lucide-react";
 
+import { useLanguage } from "../../translations/LanguageContext";
+
 /* =========================================================
    TYPES
 ========================================================= */
 
-type Language = "en" | "hi" | "mr";
 type ViewMode = "farmer" | "technical";
-
-/* =========================================================
-   TRANSLATIONS
-   Natural farmer-friendly Hindi and Marathi
-========================================================= */
-
-const translations = {
-    en: {
-        farmerView: "Farmer View",
-        technicalView: "Technical View",
-
-        english: "English",
-        hindi: "हिंदी",
-        marathi: "मराठी",
-
-        iconsOnly: "Icons Only",
-        readAloud: "Read Aloud",
-        stopReading: "Stop Reading",
-
-        soilMonitoring: "Soil Monitoring",
-        soilDashboard: "Soil Dashboard",
-
-        dashboardSubtitle:
-            "Monitor your soil condition using connected hardware.",
-
-        hardwareConnected: "Hardware Connected",
-        soilSensor: "ESP32 • Soil Sensor",
-
-        refreshReadings: "Refresh Readings",
-
-        /* Farmer cards */
-
-        waterInSoil: "Water in Soil",
-        soilWarmth: "Soil Warmth",
-        soilBalance: "Soil Balance",
-        saltLevel: "Salt Level",
-
-        nitrogenFarmer: "Nitrogen (for Leaves)",
-        phosphorusFarmer: "Phosphorus (for Roots & Flowers)",
-        potassiumFarmer: "Potassium (for Fruit & Strength)",
-        sunlight: "Sunlight",
-
-        good: "Good",
-
-        /* Farmer recommendation */
-
-        whatToDo: "What to Do",
-
-        everythingGood:
-            "Everything looks good right now. No fertilizer is needed.",
-
-        /* Technical */
-
-        soilMoisture: "Soil Moisture",
-        soilTemperature: "Soil Temperature",
-        ph: "pH",
-        electricalConductivity: "Electrical Conductivity",
-
-        nitrogen: "Nitrogen (N)",
-        phosphorus: "Phosphorus (P)",
-        potassium: "Potassium (K)",
-
-        lightIntensity: "Light Intensity",
-
-        optimal: "Optimal",
-        aboveRange: "Above Range",
-        belowRange: "Below Range",
-
-        probeReading: "Probe Reading",
-
-        fertilizerRecommendation: "Fertilizer Recommendation",
-
-        basedOn:
-            "Based on current N • P • K • pH readings",
-
-        agriculturalLime: "Agricultural Lime",
-
-        limeDescription:
-            "The soil is more acidic than the recommended 6.0–7.5 range. Correcting the soil pH first can help plants absorb nutrients more effectively.",
-
-        /* Soil health */
-
-        soilHealth: "Soil Health",
-        overallCondition: "Overall condition of your soil",
-
-        soilCondition: "Soil Condition",
-        excellent: "Excellent",
-
-        soilHealthDescription:
-            "Your soil currently has balanced moisture, temperature and nutrient levels. No immediate action is required.",
-
-        /* Device */
-
-        device: "Device",
-        soilSensorUnit: "Soil Sensor Unit",
-
-        connection: "Connection",
-        connected: "Connected",
-
-        deviceName: "Device",
-        protocol: "Protocol",
-        lastUpdate: "Last Update",
-
-        justNow: "Just now",
-
-        demoData: "Demo sensor data",
-        liveData:
-            "Live ESP32 / Modbus data can be connected later",
-
-        /* Read aloud */
-
-        farmerSummary:
-            "The soil condition is currently good. Water level, soil warmth, soil balance, salt level, nitrogen, phosphorus, potassium and sunlight are all in a good condition.",
-
-        technicalSummary:
-            "Technical soil readings. Soil moisture is 57 percent and optimal. Soil temperature is 32.2 degrees Celsius and above the recommended range. Soil pH is 5.9 and below the recommended range. Electrical conductivity is 2.02 millisiemens per centimeter and above the recommended range. Nitrogen is 243 kilograms per hectare and optimal. Phosphorus is 25 kilograms per hectare and above the range. Potassium is 166 kilograms per hectare and optimal. Light intensity is 20412 lux.",
-    },
-
-    /* =====================================================
-       HINDI
-    ===================================================== */
-
-    hi: {
-        farmerView: "किसान दृश्य",
-        technicalView: "तकनीकी जानकारी",
-
-        english: "English",
-        hindi: "हिंदी",
-        marathi: "मराठी",
-
-        iconsOnly: "केवल आइकॉन",
-        readAloud: "आवाज़ में सुनें",
-        stopReading: "पढ़ना बंद करें",
-
-        soilMonitoring: "मिट्टी की निगरानी",
-        soilDashboard: "मिट्टी डैशबोर्ड",
-
-        dashboardSubtitle:
-            "कनेक्टेड सेंसर की मदद से अपनी मिट्टी की स्थिति देखें।",
-
-        hardwareConnected: "सेंसर जुड़ा हुआ है",
-        soilSensor: "ESP32 • मिट्टी सेंसर",
-
-        refreshReadings: "रीडिंग अपडेट करें",
-
-        /* Farmer */
-
-        waterInSoil: "मिट्टी में पानी",
-        soilWarmth: "मिट्टी का तापमान",
-        soilBalance: "मिट्टी का संतुलन",
-        saltLevel: "मिट्टी में नमक",
-
-        nitrogenFarmer: "नाइट्रोजन (पत्तियों के लिए)",
-        phosphorusFarmer: "फॉस्फोरस (जड़ों और फूलों के लिए)",
-        potassiumFarmer: "पोटैशियम (फलों और पौधे की मजबूती के लिए)",
-        sunlight: "धूप",
-
-        good: "अच्छी स्थिति",
-
-        /* Recommendation */
-
-        whatToDo: "क्या करें",
-
-        everythingGood:
-            "अभी मिट्टी की स्थिति अच्छी है। इस समय खाद डालने की जरूरत नहीं है।",
-
-        /* Technical */
-
-        soilMoisture: "मिट्टी की नमी",
-        soilTemperature: "मिट्टी का तापमान",
-        ph: "पीएच",
-        electricalConductivity: "विद्युत चालकता",
-
-        nitrogen: "नाइट्रोजन (N)",
-        phosphorus: "फॉस्फोरस (P)",
-        potassium: "पोटैशियम (K)",
-
-        lightIntensity: "प्रकाश की तीव्रता",
-
-        optimal: "उपयुक्त",
-        aboveRange: "सामान्य सीमा से अधिक",
-        belowRange: "सामान्य सीमा से कम",
-
-        probeReading: "सेंसर रीडिंग",
-
-        fertilizerRecommendation: "खाद की सलाह",
-
-        basedOn:
-            "वर्तमान N • P • K • pH रीडिंग के आधार पर",
-
-        agriculturalLime: "कृषि चूना",
-
-        limeDescription:
-            "मिट्टी की अम्लता अधिक है और pH 6.0–7.5 की अनुशंसित सीमा से कम है। पहले मिट्टी का pH सही करने से पौधों को पोषक तत्व बेहतर तरीके से मिल सकते हैं।",
-
-        /* Soil health */
-
-        soilHealth: "मिट्टी की सेहत",
-        overallCondition: "आपकी मिट्टी की कुल स्थिति",
-
-        soilCondition: "मिट्टी की स्थिति",
-        excellent: "बहुत अच्छी",
-
-        soilHealthDescription:
-            "अभी मिट्टी में नमी, तापमान और पोषक तत्व संतुलित हैं। फिलहाल किसी तुरंत कार्रवाई की जरूरत नहीं है।",
-
-        /* Device */
-
-        device: "डिवाइस",
-        soilSensorUnit: "मिट्टी सेंसर यूनिट",
-
-        connection: "कनेक्शन",
-        connected: "जुड़ा हुआ",
-
-        deviceName: "डिवाइस",
-        protocol: "प्रोटोकॉल",
-        lastUpdate: "आखिरी अपडेट",
-
-        justNow: "अभी",
-
-        demoData: "डेमो सेंसर डेटा",
-
-        liveData:
-            "बाद में लाइव ESP32 / Modbus डेटा जोड़ा जा सकता है",
-
-        /* Read aloud */
-
-        farmerSummary:
-            "अभी मिट्टी की स्थिति अच्छी है। मिट्टी में पानी, तापमान, संतुलन, नमक, नाइट्रोजन, फॉस्फोरस, पोटैशियम और धूप की स्थिति अच्छी है।",
-
-        technicalSummary:
-            "तकनीकी मिट्टी की जानकारी। मिट्टी की नमी 57 प्रतिशत है और यह उपयुक्त है। मिट्टी का तापमान 32.2 डिग्री सेल्सियस है और सामान्य सीमा से अधिक है। मिट्टी का पीएच 5.9 है और सामान्य सीमा से कम है। विद्युत चालकता 2.02 मिलीसीमेंस प्रति सेंटीमीटर है और सामान्य सीमा से अधिक है। नाइट्रोजन 243 किलोग्राम प्रति हेक्टेयर है और उपयुक्त है। फॉस्फोरस 25 किलोग्राम प्रति हेक्टेयर है और सामान्य सीमा से अधिक है। पोटैशियम 166 किलोग्राम प्रति हेक्टेयर है और उपयुक्त है। प्रकाश की तीव्रता 20412 लक्स है।",
-    },
-
-    /* =====================================================
-       MARATHI
-    ===================================================== */
-
-    mr: {
-        farmerView: "शेतकरी दृश्य",
-        technicalView: "तांत्रिक माहिती",
-
-        english: "English",
-        hindi: "हिंदी",
-        marathi: "मराठी",
-
-        iconsOnly: "फक्त आयकॉन",
-        readAloud: "आवाजात वाचा",
-        stopReading: "वाचन थांबवा",
-
-        soilMonitoring: "मातीचे निरीक्षण",
-        soilDashboard: "माती डॅशबोर्ड",
-
-        dashboardSubtitle:
-            "कनेक्टेड सेन्सरच्या मदतीने मातीची स्थिती तपासा.",
-
-        hardwareConnected: "सेन्सर जोडलेला आहे",
-        soilSensor: "ESP32 • माती सेन्सर",
-
-        refreshReadings: "रीडिंग अपडेट करा",
-
-        /* Farmer */
-
-        waterInSoil: "मातीतील पाणी",
-        soilWarmth: "मातीचे तापमान",
-        soilBalance: "मातीचा समतोल",
-        saltLevel: "मातीतील क्षार",
-
-        nitrogenFarmer: "नायट्रोजन (पानांसाठी)",
-        phosphorusFarmer: "फॉस्फरस (मुळे आणि फुलांसाठी)",
-        potassiumFarmer: "पोटॅशियम (फळे आणि झाडाच्या मजबुतीसाठी)",
-        sunlight: "सूर्यप्रकाश",
-
-        good: "चांगली स्थिती",
-
-        /* Recommendation */
-
-        whatToDo: "काय करावे",
-
-        everythingGood:
-            "सध्या मातीची स्थिती चांगली आहे. आत्ता खत देण्याची गरज नाही.",
-
-        /* Technical */
-
-        soilMoisture: "मातीतील ओलावा",
-        soilTemperature: "मातीचे तापमान",
-        ph: "पीएच",
-        electricalConductivity: "विद्युत चालकता",
-
-        nitrogen: "नायट्रोजन (N)",
-        phosphorus: "फॉस्फरस (P)",
-        potassium: "पोटॅशियम (K)",
-
-        lightIntensity: "प्रकाशाची तीव्रता",
-
-        optimal: "योग्य पातळी",
-        aboveRange: "सामान्य मर्यादेपेक्षा जास्त",
-        belowRange: "सामान्य मर्यादेपेक्षा कमी",
-
-        probeReading: "सेन्सर रीडिंग",
-
-        fertilizerRecommendation: "खताची शिफारस",
-
-        basedOn:
-            "सध्याच्या N • P • K • pH रीडिंगच्या आधारावर",
-
-        agriculturalLime: "कृषी चुना",
-
-        limeDescription:
-            "मातीची आम्लता जास्त आहे आणि pH 6.0–7.5 या योग्य मर्यादेपेक्षा कमी आहे. प्रथम मातीचा pH योग्य केल्यास पिकांना पोषक घटक अधिक चांगल्या प्रकारे मिळू शकतात.",
-
-        /* Soil health */
-
-        soilHealth: "मातीची गुणवत्ता",
-        overallCondition: "तुमच्या मातीची एकूण स्थिती",
-
-        soilCondition: "मातीची स्थिती",
-        excellent: "उत्तम",
-
-        soilHealthDescription:
-            "सध्या मातीतील ओलावा, तापमान आणि पोषक घटक संतुलित आहेत. आत्ता कोणतीही तातडीची कारवाई करण्याची गरज नाही.",
-
-        /* Device */
-
-        device: "डिव्हाइस",
-        soilSensorUnit: "माती सेन्सर युनिट",
-
-        connection: "कनेक्शन",
-        connected: "जोडलेले",
-
-        deviceName: "डिव्हाइस",
-        protocol: "प्रोटोकॉल",
-        lastUpdate: "शेवटचे अपडेट",
-
-        justNow: "आत्ताच",
-
-        demoData: "डेमो सेन्सर डेटा",
-
-        liveData:
-            "नंतर थेट ESP32 / Modbus डेटा जोडता येईल",
-
-        /* Read aloud */
-
-        farmerSummary:
-            "सध्या मातीची स्थिती चांगली आहे. मातीतील पाणी, तापमान, समतोल, क्षार, नायट्रोजन, फॉस्फरस, पोटॅशियम आणि सूर्यप्रकाशाची स्थिती चांगली आहे.",
-
-        technicalSummary:
-            "मातीची तांत्रिक माहिती. मातीतील ओलावा 57 टक्के आहे आणि तो योग्य आहे. मातीचे तापमान 32.2 अंश सेल्सिअस आहे आणि ते सामान्य मर्यादेपेक्षा जास्त आहे. मातीचा पीएच 5.9 आहे आणि तो सामान्य मर्यादेपेक्षा कमी आहे. विद्युत चालकता 2.02 मिलीसीमेंस प्रति सेंटीमीटर आहे आणि ती सामान्य मर्यादेपेक्षा जास्त आहे. नायट्रोजन 243 किलोग्रॅम प्रति हेक्टर आहे आणि योग्य पातळीवर आहे. फॉस्फरस 25 किलोग्रॅम प्रति हेक्टर आहे आणि सामान्य मर्यादेपेक्षा जास्त आहे. पोटॅशियम 166 किलोग्रॅम प्रति हेक्टर आहे आणि योग्य पातळीवर आहे. प्रकाशाची तीव्रता 20412 लक्स आहे.",
-    },
-};
 
 /* =========================================================
    FARMER DATA
@@ -385,42 +37,67 @@ const farmerData = [
     {
         key: "waterInSoil",
         icon: Droplets,
-        rating: 3,
+        rating:
+            soilData.moisture < 40 || soilData.moisture > 80
+                ? 1
+                : 3,
     },
     {
         key: "soilWarmth",
         icon: Thermometer,
-        rating: 3,
+        rating:
+            soilData.temperature < 18 || soilData.temperature > 30
+                ? 1
+                : 3,
     },
     {
         key: "soilBalance",
         icon: Scale,
-        rating: 2,
+        rating:
+            soilData.ph < 6 || soilData.ph > 7.5
+                ? 1
+                : 3,
     },
     {
         key: "saltLevel",
         icon: Waves,
-        rating: 2,
+        rating:
+            soilData.ec < 0.2 || soilData.ec > 1.2
+                ? 1
+                : 3,
     },
     {
         key: "nitrogenFarmer",
         icon: Leaf,
-        rating: 3,
+        rating:
+            soilData.nitrogen < 20 || soilData.nitrogen > 50
+                ? 1
+                : 3,
     },
     {
         key: "phosphorusFarmer",
         icon: Sprout,
-        rating: 1,
+        rating:
+            soilData.phosphorus < 10 || soilData.phosphorus > 30
+                ? 1
+                : 3,
     },
     {
         key: "potassiumFarmer",
         icon: Zap,
-        rating: 2,
+        rating:
+            soilData.potassium < 100 || soilData.potassium > 250
+                ? 1
+                : 3,
     },
     {
         key: "sunlight",
         icon: Sun,
-        rating: 3,
+        rating:
+            soilData.lightIntensity < 5000 ||
+            soilData.lightIntensity > 30000
+                ? 1
+                : 3,
     },
 ];
 
@@ -431,87 +108,465 @@ const farmerData = [
 const technicalData = [
     {
         key: "soilMoisture",
-        value: "57",
+        value: soilData.moisture.toString(),
         unit: "%",
-        status: "optimal",
+        status:
+            soilData.moisture < 40
+                ? "belowRange"
+                : soilData.moisture > 80
+                    ? "aboveRange"
+                    : "optimal",
         icon: Droplets,
-        progress: 57,
-        probe: "57%",
+        progress: Math.min(soilData.moisture, 100),
+        probe: `${soilData.moisture}%`,
     },
+
     {
         key: "soilTemperature",
-        value: "32.2",
+        value: soilData.temperature.toFixed(1),
         unit: "°C",
-        status: "aboveRange",
+        status:
+            soilData.temperature < 18
+                ? "belowRange"
+                : soilData.temperature > 30
+                    ? "aboveRange"
+                    : "optimal",
         icon: Thermometer,
-        progress: 68,
-        probe: "32.2 °C",
+        progress: Math.min(
+            (soilData.temperature / 40) * 100,
+            100
+        ),
+        probe: `${soilData.temperature.toFixed(1)} °C`,
     },
+
     {
         key: "ph",
-        value: "5.9",
+        value: soilData.ph.toFixed(1),
         unit: "",
-        status: "belowRange",
+        status:
+            soilData.ph < 6
+                ? "belowRange"
+                : soilData.ph > 7.5
+                    ? "aboveRange"
+                    : "optimal",
         icon: FlaskConical,
-        progress: 42,
-        probe: "5.9",
+        progress: Math.min(
+            (soilData.ph / 14) * 100,
+            100
+        ),
+        probe: soilData.ph.toFixed(1),
     },
+
     {
         key: "electricalConductivity",
-        value: "2.02",
+        value: soilData.ec.toFixed(2),
         unit: "mS/cm",
-        status: "aboveRange",
+        status:
+            soilData.ec < 0.2
+                ? "belowRange"
+                : soilData.ec > 1.2
+                    ? "aboveRange"
+                    : "optimal",
         icon: Activity,
-        progress: 55,
-        probe: "2.02 mS/cm",
+        progress: Math.min(
+            (soilData.ec / 4) * 100,
+            100
+        ),
+        probe: `${soilData.ec.toFixed(2)} mS/cm`,
     },
+
     {
         key: "nitrogen",
-        value: "243",
+        value: soilData.nitrogen.toString(),
         unit: "kg/ha",
-        status: "optimal",
+        status: soilData.nitrogen < 20
+            ? "belowRange"
+            : soilData.nitrogen > 50
+                ? "aboveRange"
+                : "optimal",
         icon: Leaf,
-        progress: 65,
-        probe: "222 mg/kg",
+        progress: Math.min(
+            (soilData.nitrogen / 300) * 100,
+            100
+        ),
+        probe: `${soilData.nitrogen}`,
     },
+
     {
         key: "phosphorus",
-        value: "25",
+        value: soilData.phosphorus.toString(),
         unit: "kg/ha",
-        status: "aboveRange",
+        status:
+            soilData.phosphorus < 10
+                ? "belowRange"
+                : soilData.phosphorus > 30
+                    ? "aboveRange"
+                    : "optimal",
         icon: Sprout,
-        progress: 25,
-        probe: "12.7 mg/kg",
+        progress: Math.min(
+            (soilData.phosphorus / 50) * 100,
+            100
+        ),
+        probe: `${soilData.phosphorus}`,
     },
-    {
-        key: "potassium",
-        value: "166",
-        unit: "kg/ha",
-        status: "optimal",
-        icon: Zap,
-        progress: 48,
-        probe: "83 mg/kg",
-    },
-    {
-        key: "lightIntensity",
-        value: "20412",
-        unit: "lux",
-        status: "optimal",
-        icon: Sun,
-        progress: 68,
-        probe: "20412 lux",
-    },
+{
+    key: "potassium",
+    value: soilData.potassium.toString(),
+    unit: "kg/ha",
+    status:
+        soilData.potassium < 100
+            ? "belowRange"
+            : soilData.potassium > 250
+                ? "aboveRange"
+                : "optimal",
+    icon: Zap,
+    progress: Math.min(
+        (soilData.potassium / 300) * 100,
+        100
+    ),
+    probe: `${soilData.potassium}`,
+},
+
+{
+    key: "lightIntensity",
+    value: soilData.lightIntensity.toString(),
+    unit: "lux",
+    status:
+        soilData.lightIntensity < 5000
+            ? "belowRange"
+            : soilData.lightIntensity > 30000
+                ? "aboveRange"
+                : "optimal",
+    icon: Sun,
+    progress: Math.min(
+        (soilData.lightIntensity / 30000) * 100,
+        100
+    ),
+    probe: `${soilData.lightIntensity} lux`,
+},
 ];
 
+function RecommendedRanges({
+    soilData,
+}: {
+    soilData: {
+        moisture: number;
+        temperature: number;
+        ph: number;
+        ec: number;
+        nitrogen: number;
+        phosphorus: number;
+        potassium: number;
+        lightIntensity: number;
+    };
+}) {
+    const { t } = useLanguage();
+
+    const ranges = [
+        {
+            name: t.soilMoisture,
+            current: soilData.moisture,
+            min: 40,
+            max: 80,
+            unit: "%",
+            icon: Droplets,
+        },
+        {
+            name: t.soilTemperature,
+            current: soilData.temperature,
+            min: 18,
+            max: 30,
+            unit: "°C",
+            icon: Thermometer,
+        },
+        {
+            name: t.ph,
+            current: soilData.ph,
+            min: 6,
+            max: 7.5,
+            unit: "",
+            icon: FlaskConical,
+        },
+        {
+            name: t.electricalConductivity,
+            current: soilData.ec,
+            min: 0.2,
+            max: 1.2,
+            unit: "mS/cm",
+            icon: Activity,
+        },
+        {
+            name: t.nitrogen,
+            current: soilData.nitrogen,
+            min: 20,
+            max: 50,
+            unit: "kg/ha",
+            icon: Leaf,
+        },
+        {
+            name: t.phosphorus,
+            current: soilData.phosphorus,
+            min: 10,
+            max: 30,
+            unit: "kg/ha",
+            icon: Sprout,
+        },
+        {
+            name: t.potassium,
+            current: soilData.potassium,
+            min: 100,
+            max: 250,
+            unit: "kg/ha",
+            icon: Zap,
+        },
+        {
+            name: t.lightIntensity,
+            current: soilData.lightIntensity,
+            min: 5000,
+            max: 30000,
+            unit: "lux",
+            icon: Sun,
+        },
+    ];
+
+
+    const getStatus = (
+        current: number,
+        min: number,
+        max: number
+    ) => {
+        if (current < min) {
+            return {
+                text: t.belowRange,
+                className:
+                    "bg-orange-100 text-orange-700",
+            };
+        }
+
+        if (current > max) {
+            return {
+                text: t.aboveRange,
+                className:
+                    "bg-red-100 text-red-700",
+            };
+        }
+
+        return {
+            text: t.optimal,
+            className:
+                "bg-green-100 text-green-700",
+        };
+    };
+
+    return (
+        <motion.section
+            initial={{
+                opacity: 0,
+                y: 20,
+            }}
+            animate={{
+                opacity: 1,
+                y: 0,
+            }}
+            transition={{
+                duration: 0.5,
+            }}
+            className="
+                mt-8
+                rounded-3xl
+                p-6
+                bg-white/30
+                backdrop-blur-xl
+                border
+                border-white/60
+                shadow-[0_8px_25px_rgba(0,0,0,0.08)]
+            "
+        >
+            <div className="mb-6">
+                <h2
+                    className="
+                        text-2xl
+                        font-bold
+                        text-black
+                    "
+                >
+                    {t.recommendedSoilRanges}
+                </h2>
+
+                <p
+                    className="
+                        text-sm
+                        text-gray-500
+                        mt-1
+                    "
+                >
+                    {t.recommendedSoilRangesDescription}
+                </p>
+            </div>
+
+            <div
+                className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                    lg:grid-cols-3
+                    xl:grid-cols-4
+                    gap-4
+                "
+            >
+                {ranges.map((item) => {
+                    const Icon = item.icon;
+
+                    const status = getStatus(
+                        item.current,
+                        item.min,
+                        item.max
+                    );
+
+                    return (
+                        <div
+                            key={item.name}
+                            className="
+                                rounded-2xl
+                                p-4
+                                bg-white/35
+                                border
+                                border-white/50
+                            "
+                        >
+                            <div
+                                className="
+                                    flex
+                                    items-center
+                                    gap-3
+                                    mb-4
+                                "
+                            >
+                                <div
+                                    className="
+                                        w-10
+                                        h-10
+                                        rounded-xl
+                                        flex
+                                        items-center
+                                        justify-center
+                                        bg-green-100/70
+                                    "
+                                >
+                                    <Icon
+                                        size={20}
+                                        className="
+                                            text-green-700
+                                        "
+                                    />
+                                </div>
+
+                                <p
+                                    className="
+                                        font-semibold
+                                        text-black
+                                    "
+                                >
+                                    {item.name}
+                                </p>
+                            </div>
+
+                            <p
+                                className="
+                                    text-xs
+                                    text-gray-500
+                                "
+                            >
+                                {t.currentValue}
+                            </p>
+
+                            <p
+                                className="
+                                    text-2xl
+                                    font-bold
+                                    text-black
+                                    mt-1
+                                "
+                            >
+                                {item.current}{" "}
+                                {item.unit}
+                            </p>
+
+                            <div className="mt-3">
+                                <p
+                                    className="
+                                        text-xs
+                                        text-gray-500
+                                    "
+                                >
+                                    {t.requiredRange}
+                                </p>
+
+                                <p
+                                    className="
+                                        text-sm
+                                        font-semibold
+                                        text-gray-700
+                                        mt-1
+                                    "
+                                >
+                                    {item.min} – {item.max}{" "}
+                                    {item.unit}
+                                </p>
+                            </div>
+
+                            <span
+                                className={`
+                                    inline-block
+                                    mt-3
+                                    px-3
+                                    py-1
+                                    rounded-full
+                                    text-xs
+                                    font-semibold
+                                    ${status.className}
+                                `}
+                            >
+                                {status.text}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </motion.section>
+    );
+}
 /* =========================================================
    MAIN COMPONENT
 ========================================================= */
 
 export default function Dashboard() {
-    const [view, setView] = useState<ViewMode>("farmer");
 
-    const [language, setLanguage] =
-        useState<Language>("en");
+    /* =====================================================
+       LANGUAGE CONTEXT
+    ===================================================== */
+
+    const {
+        language,
+        t,
+    } = useLanguage();
+
+    /* =====================================================
+       VIEW
+    ===================================================== */
+
+    const [view, setView] =
+        useState<ViewMode>("farmer");
+
+        const [aiSolution, setAiSolution] = useState("");
+const [aiLoading, setAiLoading] = useState(false);
+
+const [fertilizerRecommendation, setFertilizerRecommendation] = useState("");
+const [fertilizerLoading, setFertilizerLoading] = useState(false);
+
+    /* =====================================================
+       ACCESSIBILITY
+    ===================================================== */
 
     const [iconsOnly, setIconsOnly] =
         useState(false);
@@ -519,33 +574,196 @@ export default function Dashboard() {
     const [isReading, setIsReading] =
         useState(false);
 
-    const [lastUpdated, setLastUpdated] =
-        useState("Just now");
+    /* =====================================================
+       LAST UPDATED
+    ===================================================== */
 
-    const t = translations[language];
+    const [lastUpdated, setLastUpdated] =
+        useState("");
 
     /* =====================================================
        REFRESH
     ===================================================== */
 
     const refreshData = () => {
+
         const now = new Date();
 
-        const time = now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-        });
+        const time =
+            now.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
 
         setLastUpdated(time);
     };
 
+    const generateFertilizerRecommendation = async () => {
+    try {
+        setFertilizerLoading(true);
+
+        const response = await fetch("/api/soil-chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                message: `
+Analyze the current soil data only for pH, Nitrogen, Phosphorus and Potassium.
+
+Generate a SHORT fertilizer recommendation.
+
+Rules:
+- Check the values against these ranges:
+  pH: 6.0 to 7.5
+  Nitrogen: 20 to 50 kg/ha
+  Phosphorus: 10 to 30 kg/ha
+  Potassium: 100 to 250 kg/ha
+- If pH is below 6, recommend agricultural lime.
+- If pH is above 7.5, recommend a suitable general approach for reducing excessive alkalinity.
+- If Nitrogen is below 20, recommend a nitrogen fertilizer.
+- If Phosphorus is below 10, recommend a phosphorus fertilizer.
+- If Potassium is below 100, recommend a potassium fertilizer.
+- Do not recommend fertilizer for parameters that are already within range.
+- Do not mention normal parameters.
+- Do not give fertilizer dosage or quantity.
+- Do not give sensor analysis.
+- Do not use bullet points.
+- Do not use headings.
+- Give only one or two short sentences.
+- Respond in the selected language.
+- If all pH, N, P and K values are within range, say that no fertilizer recommendation is currently needed.
+
+Return only the recommendation text.
+`,
+                    soilData,
+                    language,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error("Fertilizer AI error:", data);
+                setFertilizerRecommendation(
+                    "Fertilizer recommendation मिळू शकली नाही."
+                );
+                return;
+            }
+
+            setFertilizerRecommendation(
+                data.answer || "No fertilizer recommendation needed."
+            );
+
+        } catch (error) {
+            console.error(
+                "Fertilizer recommendation error:",
+                error
+            );
+
+            setFertilizerRecommendation(
+                "Fertilizer recommendation मिळू शकली नाही."
+            );
+
+        } finally {
+            setFertilizerLoading(false);
+        }
+    };
+
+    const generateAISolution = async () => {
+    try {
+        setAiLoading(true);
+
+        const response = await fetch("/api/soil-chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                message:
+                    `Look only at the soil parameters that are outside their recommended range.
+
+Give ONE short practical solution for the farmer.
+
+Rules:
+- Mention only the abnormal parameter.
+- Do not list normal parameters.
+- Do not provide sensor readings analysis.
+- Do not use headings.
+- Do not use bullet points.
+- Do not ask questions.
+- Do not give a long explanation.
+- Give only 1 or 2 simple sentences.
+- Respond in the selected language. `,
+               soilData: soilData,
+                language: language,
+            }),
+        });
+
+         const data = await response.json();
+
+        if (!response.ok) {
+            console.error("AI API error:", data);
+            setAiSolution("AI उपाय मिळू शकला नाही.");
+            return;
+        }
+
+        setAiSolution(data.answer || "AI उपाय मिळू शकला नाही.");
+    } catch (error) {
+        console.error("AI recommendation error:", error);
+        setAiSolution("AI उपाय मिळू शकला नाही.");
+    } finally {
+        setAiLoading(false);
+    }
+};
+
+useEffect(() => {
+    const abnormal =
+        soilData.moisture < 40 ||
+        soilData.moisture > 80 ||
+        soilData.temperature < 18 ||
+        soilData.temperature > 30 ||
+        soilData.ph < 6 ||
+        soilData.ph > 7.5 ||
+        soilData.ec < 0.2 ||
+        soilData.ec > 1.2 ||
+        soilData.nitrogen < 20 ||
+        soilData.nitrogen > 50 ||
+        soilData.phosphorus < 10 ||
+        soilData.phosphorus > 30 ||
+        soilData.potassium < 100 ||
+        soilData.potassium > 250 ||
+        soilData.lightIntensity < 5000 ||
+        soilData.lightIntensity > 30000;
+
+    if (abnormal) {
+        generateAISolution();
+    } else {
+        setAiSolution("");
+    }
+}, [soilData, language]);
+
+useEffect(() => {
+    generateFertilizerRecommendation();
+}, [
+    soilData.ph,
+    soilData.nitrogen,
+    soilData.phosphorus,
+    soilData.potassium,
+    language,
+]);
     /* =====================================================
        READ ALOUD
     ===================================================== */
 
     const speakDashboard = () => {
-        if (typeof window === "undefined") return;
+
+        if (
+            typeof window === "undefined"
+        ) {
+            return;
+        }
 
         window.speechSynthesis.cancel();
 
@@ -555,14 +773,24 @@ export default function Dashboard() {
                 : t.technicalSummary;
 
         const speech =
-            new SpeechSynthesisUtterance(text);
+            new SpeechSynthesisUtterance(
+                text
+            );
 
         if (language === "hi") {
+
             speech.lang = "hi-IN";
-        } else if (language === "mr") {
+
+        } else if (
+            language === "mr"
+        ) {
+
             speech.lang = "mr-IN";
+
         } else {
+
             speech.lang = "en-IN";
+
         }
 
         speech.rate = 0.85;
@@ -580,7 +808,9 @@ export default function Dashboard() {
             setIsReading(false);
         };
 
-        window.speechSynthesis.speak(speech);
+        window.speechSynthesis.speak(
+            speech
+        );
     };
 
     /* =====================================================
@@ -588,27 +818,24 @@ export default function Dashboard() {
     ===================================================== */
 
     const stopReading = () => {
-        if (typeof window !== "undefined") {
+
+        if (
+            typeof window !== "undefined"
+        ) {
             window.speechSynthesis.cancel();
         }
 
         setIsReading(false);
     };
 
-    /* =====================================================
-       CHANGE LANGUAGE
-    ===================================================== */
-
-    const changeLanguage = (newLanguage: Language) => {
-        stopReading();
-        setLanguage(newLanguage);
-    };
+    
 
     /* =====================================================
        UI
     ===================================================== */
 
     return (
+
         <main
             className="
                 min-h-screen
@@ -625,6 +852,7 @@ export default function Dashboard() {
                     "url('/background.png')",
             }}
         >
+
             <div
                 className="
                     max-w-7xl
@@ -702,7 +930,15 @@ export default function Dashboard() {
 
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-3
+                        "
+                    >
+
+                        {/* Hardware */}
 
                         <div
                             className="
@@ -720,7 +956,11 @@ export default function Dashboard() {
                             "
                         >
 
-                            <div className="relative">
+                            <div
+                                className="
+                                    relative
+                                "
+                            >
 
                                 <span
                                     className="
@@ -772,6 +1012,8 @@ export default function Dashboard() {
 
                         </div>
 
+                        {/* Refresh */}
+
                         <button
                             onClick={refreshData}
                             className="
@@ -789,9 +1031,13 @@ export default function Dashboard() {
                                 transition
                             "
                         >
-                            <RefreshCw size={18} />
+
+                            <RefreshCw
+                                size={18}
+                            />
 
                             {t.refreshReadings}
+
                         </button>
 
                     </div>
@@ -829,7 +1075,9 @@ export default function Dashboard() {
                     >
 
                         <button
-                            onClick={() => setView("farmer")}
+                            onClick={() =>
+                                setView("farmer")
+                            }
                             className={`
                                 px-5
                                 py-3
@@ -837,7 +1085,8 @@ export default function Dashboard() {
                                 font-semibold
                                 transition
                                 ${
-                                    view === "farmer"
+                                    view ===
+                                    "farmer"
                                         ? "bg-white text-black shadow"
                                         : "text-gray-600 hover:text-black"
                                 }
@@ -847,7 +1096,9 @@ export default function Dashboard() {
                         </button>
 
                         <button
-                            onClick={() => setView("technical")}
+                            onClick={() =>
+                                setView("technical")
+                            }
                             className={`
                                 px-5
                                 py-3
@@ -855,7 +1106,8 @@ export default function Dashboard() {
                                 font-semibold
                                 transition
                                 ${
-                                    view === "technical"
+                                    view ===
+                                    "technical"
                                         ? "bg-white text-black shadow"
                                         : "text-gray-600 hover:text-black"
                                 }
@@ -866,82 +1118,9 @@ export default function Dashboard() {
 
                     </div>
 
-                    {/* Language */}
+                 
 
-                    <div
-                        className="
-                            flex
-                            w-fit
-                            rounded-2xl
-                            bg-black/5
-                            p-1
-                            border
-                            border-white/40
-                        "
-                    >
-
-                        <button
-                            onClick={() =>
-                                changeLanguage("en")
-                            }
-                            className={`
-                                px-4
-                                py-2.5
-                                rounded-xl
-                                font-medium
-                                transition
-                                ${
-                                    language === "en"
-                                        ? "bg-white text-black shadow"
-                                        : "text-gray-600"
-                                }
-                            `}
-                        >
-                            English
-                        </button>
-
-                        <button
-                            onClick={() =>
-                                changeLanguage("hi")
-                            }
-                            className={`
-                                px-4
-                                py-2.5
-                                rounded-xl
-                                font-medium
-                                transition
-                                ${
-                                    language === "hi"
-                                        ? "bg-white text-black shadow"
-                                        : "text-gray-600"
-                                }
-                            `}
-                        >
-                            हिंदी
-                        </button>
-
-                        <button
-                            onClick={() =>
-                                changeLanguage("mr")
-                            }
-                            className={`
-                                px-4
-                                py-2.5
-                                rounded-xl
-                                font-medium
-                                transition
-                                ${
-                                    language === "mr"
-                                        ? "bg-white text-black shadow"
-                                        : "text-gray-600"
-                                }
-                            `}
-                        >
-                            मराठी
-                        </button>
-
-                    </div>
-
+                    
                 </div>
 
                 {/* =================================================
@@ -972,7 +1151,9 @@ export default function Dashboard() {
 
                         <input
                             type="checkbox"
-                            checked={iconsOnly}
+                            checked={
+                                iconsOnly
+                            }
                             onChange={(e) =>
                                 setIconsOnly(
                                     e.target.checked
@@ -1011,7 +1192,9 @@ export default function Dashboard() {
                         "
                     >
 
-                        <Volume2 size={20} />
+                        <Volume2
+                            size={20}
+                        />
 
                         {isReading
                             ? t.stopReading
@@ -1054,7 +1237,10 @@ export default function Dashboard() {
                         >
 
                             {farmerData.map(
-                                (item, index) => {
+                                (
+                                    item,
+                                    index
+                                ) => {
 
                                     const Icon =
                                         item.icon;
@@ -1062,7 +1248,9 @@ export default function Dashboard() {
                                     return (
 
                                         <motion.div
-                                            key={item.key}
+                                            key={
+                                                item.key
+                                            }
                                             initial={{
                                                 opacity: 0,
                                                 y: 20,
@@ -1118,7 +1306,9 @@ export default function Dashboard() {
                                                 >
 
                                                     <Icon
-                                                        size={38}
+                                                        size={
+                                                            38
+                                                        }
                                                         className="
                                                             text-green-700
                                                         "
@@ -1146,15 +1336,20 @@ export default function Dashboard() {
                                                         </p>
 
                                                         <p
-                                                            className="
-                                                                text-2xl
-                                                                font-bold
-                                                                text-green-700
-                                                                mt-3
-                                                            "
-                                                        >
-                                                            {t.good}
-                                                        </p>
+    className={`text-2xl font-bold mt-3 ${
+        item.rating <= 1
+            ? "text-orange-600"
+            : item.rating <= 2
+            ? "text-yellow-600"
+            : "text-green-700"
+    }`}
+>
+    {item.rating <= 1
+        ? t.needsAttention
+        : item.rating <= 2
+        ? t.moderate
+        : t.good}
+</p>
 
                                                         <div
                                                             className="
@@ -1164,8 +1359,16 @@ export default function Dashboard() {
                                                             "
                                                         >
 
-                                                            {[1, 2, 3, 4, 5].map(
-                                                                (dot) => (
+                                                            {[
+                                                                1,
+                                                                2,
+                                                                3,
+                                                                4,
+                                                                5,
+                                                            ].map(
+                                                                (
+                                                                    dot
+                                                                ) => (
 
                                                                     <span
                                                                         key={
@@ -1258,7 +1461,9 @@ export default function Dashboard() {
                                             font-medium
                                         "
                                     >
-                                        {t.everythingGood}
+                                        {aiLoading 
+                                        ? t.loadingRecommendation 
+                                        :aiSolution || t.everythingGood}
                                     </p>
 
                                 )}
@@ -1303,7 +1508,10 @@ export default function Dashboard() {
                         >
 
                             {technicalData.map(
-                                (sensor, index) => {
+                                (
+                                    sensor,
+                                    index
+                                ) => {
 
                                     const Icon =
                                         sensor.icon;
@@ -1321,7 +1529,9 @@ export default function Dashboard() {
                                     return (
 
                                         <motion.div
-                                            key={sensor.key}
+                                            key={
+                                                sensor.key
+                                            }
                                             initial={{
                                                 opacity: 0,
                                                 y: 20,
@@ -1372,7 +1582,9 @@ export default function Dashboard() {
                                                 >
 
                                                     <Icon
-                                                        size={24}
+                                                        size={
+                                                            24
+                                                        }
                                                         className="
                                                             text-green-700
                                                         "
@@ -1395,7 +1607,9 @@ export default function Dashboard() {
                                                         }
                                                     `}
                                                 >
-                                                    {status}
+                                                    {
+                                                        status
+                                                    }
                                                 </span>
 
                                             </div>
@@ -1412,7 +1626,9 @@ export default function Dashboard() {
                                                             mt-5
                                                         "
                                                     >
-                                                        {title}
+                                                        {
+                                                            title
+                                                        }
                                                     </p>
 
                                                     <div
@@ -1485,10 +1701,17 @@ export default function Dashboard() {
                                                             mt-4
                                                         "
                                                     >
-                                                        {t.probeReading}:{" "}
+
+                                                        {
+                                                            t.probeReading
+                                                        }
+
+                                                        {": "}
+
                                                         {
                                                             sensor.probe
                                                         }
+
                                                     </p>
 
                                                 </>
@@ -1507,7 +1730,11 @@ export default function Dashboard() {
                             FERTILIZER RECOMMENDATION
                         ================================================= */}
 
-                        <section className="mt-8">
+                        <section
+                            className="
+                                mt-8
+                            "
+                        >
 
                             <div
                                 className="
@@ -1528,7 +1755,9 @@ export default function Dashboard() {
                                         text-black
                                     "
                                 >
-                                    {t.fertilizerRecommendation}
+                                    {
+                                        t.fertilizerRecommendation
+                                    }
                                 </h2>
 
                                 <p
@@ -1556,33 +1785,23 @@ export default function Dashboard() {
                             >
 
                                 <div
-                                    className="
-                                        flex
-                                        flex-col
-                                        md:flex-row
-                                        gap-3
-                                    "
-                                >
-
-                                    <span
-                                        className="
-                                            font-bold
-                                            text-orange-700
-                                            min-w-fit
-                                        "
-                                    >
-                                        {t.agriculturalLime}
-                                    </span>
-
-                                    <span
-                                        className="
-                                            text-gray-700
-                                        "
-                                    >
-                                        {t.limeDescription}
-                                    </span>
-
-                                </div>
+    className="
+        flex
+        flex-col
+        gap-2
+    "
+>
+    {fertilizerLoading ? (
+        <p className="text-gray-600 font-medium">
+            {t.loadingRecommendation}
+        </p>
+    ) : (
+        <p className="text-gray-700 font-medium">
+            {fertilizerRecommendation ||
+                "No fertilizer recommendation needed."}
+        </p>
+    )}
+</div>
 
                             </div>
 
@@ -1606,7 +1825,9 @@ export default function Dashboard() {
                     "
                 >
 
-                    {/* Soil health */}
+                    {/* =================================================
+                        SOIL HEALTH
+                    ================================================= */}
 
                     <motion.div
                         initial={{
@@ -1659,7 +1880,9 @@ export default function Dashboard() {
                                         mt-1
                                     "
                                 >
-                                    {t.overallCondition}
+                                    {
+                                        t.overallCondition
+                                    }
                                 </p>
 
                             </div>
@@ -1757,7 +1980,9 @@ export default function Dashboard() {
                                                 text-gray-600
                                             "
                                         >
-                                            {t.soilCondition}
+                                            {
+                                                t.soilCondition
+                                            }
                                         </span>
 
                                         <span
@@ -1767,7 +1992,9 @@ export default function Dashboard() {
                                                 text-green-700
                                             "
                                         >
-                                            {t.excellent}
+                                            {
+                                                t.excellent
+                                            }
                                         </span>
 
                                     </div>
@@ -1808,7 +2035,9 @@ export default function Dashboard() {
                                             leading-6
                                         "
                                     >
-                                        {t.soilHealthDescription}
+                                        {
+                                            t.soilHealthDescription
+                                        }
                                     </p>
 
                                 </div>
@@ -1819,7 +2048,9 @@ export default function Dashboard() {
 
                     </motion.div>
 
-                    {/* Device */}
+                    {/* =================================================
+                        DEVICE
+                    ================================================= */}
 
                     <motion.div
                         initial={{
@@ -1892,7 +2123,9 @@ export default function Dashboard() {
                                         text-gray-500
                                     "
                                 >
-                                    {t.soilSensorUnit}
+                                    {
+                                        t.soilSensorUnit
+                                    }
                                 </p>
 
                             </div>
@@ -1901,7 +2134,13 @@ export default function Dashboard() {
 
                         {!iconsOnly && (
 
-                            <div className="space-y-4">
+                            <div
+                                className="
+                                    space-y-4
+                                "
+                            >
+
+                                {/* Connection */}
 
                                 <div
                                     className="
@@ -1917,7 +2156,9 @@ export default function Dashboard() {
                                             text-gray-600
                                         "
                                     >
-                                        {t.connection}
+                                        {
+                                            t.connection
+                                        }
                                     </span>
 
                                     <span
@@ -1940,7 +2181,9 @@ export default function Dashboard() {
                                             "
                                         />
 
-                                        {t.connected}
+                                        {
+                                            t.connected
+                                        }
 
                                     </span>
 
@@ -1952,6 +2195,8 @@ export default function Dashboard() {
                                         bg-white/50
                                     "
                                 />
+
+                                {/* Device Name */}
 
                                 <div
                                     className="
@@ -1967,7 +2212,9 @@ export default function Dashboard() {
                                             text-gray-600
                                         "
                                     >
-                                        {t.deviceName}
+                                        {
+                                            t.deviceName
+                                        }
                                     </span>
 
                                     <span
@@ -1982,6 +2229,8 @@ export default function Dashboard() {
 
                                 </div>
 
+                                {/* Protocol */}
+
                                 <div
                                     className="
                                         flex
@@ -1996,7 +2245,9 @@ export default function Dashboard() {
                                             text-gray-600
                                         "
                                     >
-                                        {t.protocol}
+                                        {
+                                            t.protocol
+                                        }
                                     </span>
 
                                     <span
@@ -2011,6 +2262,8 @@ export default function Dashboard() {
 
                                 </div>
 
+                                {/* Last Update */}
+
                                 <div
                                     className="
                                         flex
@@ -2025,7 +2278,9 @@ export default function Dashboard() {
                                             text-gray-600
                                         "
                                     >
-                                        {t.lastUpdate}
+                                        {
+                                            t.lastUpdate
+                                        }
                                     </span>
 
                                     <span
@@ -2035,13 +2290,20 @@ export default function Dashboard() {
                                             text-black
                                         "
                                     >
-                                        {lastUpdated}
+                                        {
+                                            lastUpdated ||
+                                            t.justNow
+                                        }
                                     </span>
 
                                 </div>
 
+                                {/* Refresh */}
+
                                 <button
-                                    onClick={refreshData}
+                                    onClick={
+                                        refreshData
+                                    }
                                     className="
                                         w-full
                                         mt-3
@@ -2059,9 +2321,13 @@ export default function Dashboard() {
                                     "
                                 >
 
-                                    <RefreshCw size={18} />
+                                    <RefreshCw
+                                        size={18}
+                                    />
 
-                                    {t.refreshReadings}
+                                    {
+                                        t.refreshReadings
+                                    }
 
                                 </button>
 
@@ -2073,6 +2339,7 @@ export default function Dashboard() {
 
                 </div>
 
+                    <RecommendedRanges soilData={soilData} />
                 {/* =================================================
                     FOOTER
                 ================================================= */}
@@ -2140,6 +2407,7 @@ export default function Dashboard() {
                 </motion.div>
 
             </div>
+
         </main>
     );
 }
